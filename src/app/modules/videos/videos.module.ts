@@ -3,7 +3,7 @@ import { VideosService } from './services/videos.service';
 import { VideosController } from './controllers/videos.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Video, VideoEntity } from './entities/video.entity';
-import { CommentEntity } from './entities/comment.entity';
+import { Comment, CommentEntity } from './entities/comment.entity';
 import { Like, LikeEntity } from './entities/like.entity';
 
 @Module({
