@@ -14,7 +14,7 @@ describe('VideosController', () => {
     controller = module.get<VideosController>(VideosController);
   });
 
-  it('should be defined', () => {
+  it('should be defined', () => { 
     expect(controller).toBeDefined();
   });
 });
