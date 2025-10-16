@@ -21,8 +21,8 @@ export class VideosController {
   @Get()
   getAllVideos() {
     try {
-      const videos = this.videosService.getAllVideos()
-      return videos
+      const response = this.videosService.getAllVideos()
+      return response
     } catch (error) {
       Logger.error(error)
     }

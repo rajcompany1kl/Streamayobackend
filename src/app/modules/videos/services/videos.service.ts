@@ -1,21 +1,19 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { CreateVideoDto } from '../dto/create-video.dto';
-import { UpdateVideoDto } from '../dto/update-video.dto';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model, ObjectId } from 'mongoose';
 import { Video, VideoDocument } from '../entities/video.entity';
-import { Controller, Post, UploadedFile, UseInterceptors, HttpException } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { HttpException } from '@nestjs/common';
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UserService } from '../../user/services/user.service';
 
 @Injectable()
 export class VideosService {
   constructor(
     @InjectConnection() private connection: Connection,
-    @InjectModel(Video.name) private videoModel: Model<VideoDocument> 
+    @InjectModel(Video.name) private videoModel: Model<VideoDocument>,
+    private readonly userService: UserService
   ) {}
 
   public async getAllVideos() {
@@ -24,8 +22,14 @@ export class VideosService {
     if (!fs.existsSync(hlsDir)) {
       return [];
     }
+    let users: any[] = []
+    const videos = await this.videoModel.find().exec()
+    for(let video of videos) {
+      const user = await this.userService.getUserById(video.userId)
+      users.push(user)
+    }
 
-    return this.videoModel.find().exec()
+    return {users, videos}
   }
 
   private async getVideoById(id: string) {
