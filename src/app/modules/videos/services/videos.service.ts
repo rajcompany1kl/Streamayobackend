@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateVideoDto } from '../dto/create-video.dto';
 import { UpdateVideoDto } from '../dto/update-video.dto';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model, ObjectId } from 'mongoose';
+import { Video, VideoDocument } from '../entities/video.entity';
 import { Controller, Post, UploadedFile, UseInterceptors, HttpException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -10,58 +13,94 @@ import * as path from 'path';
 
 @Injectable()
 export class VideosService {
-  create(createVideoDto: CreateVideoDto) {
-    
+  constructor(
+    @InjectConnection() private connection: Connection,
+    @InjectModel(Video.name) private videoModel: Model<VideoDocument> 
+  ) {}
+
+  public async getAllVideos() {
+    const hlsDir = path.join(process.cwd(), 'hls');
+
+    if (!fs.existsSync(hlsDir)) {
+      return [];
+    }
+
+    return this.videoModel.find().exec()
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} video`;
+  private async getVideoById(id: string) {
+    return this.videoModel.findById(id).exec()
   }
 
-  update(id: number, updateVideoDto: UpdateVideoDto) {
-    return `This action updates a #${id} video`;
+  public async getVideoByUserId(userId: string) {
+    return this.videoModel.find({ userId }).exec()
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} video`;
+  private async deleteVideoMetadata(id: string) {
+    const deletedVideo = this.videoModel.findByIdAndDelete(id).exec();
+    if(!deletedVideo) {
+      throw new NotFoundException(`Video with id: ${id} not found!`)
+    }
+    return deletedVideo
   }
-  async upload(file: Express.Multer.File) {
-    
-    if (!file) throw new HttpException('No file uploaded', 400);
-    const inputPath = file.path;
-    const videoId = Date.now().toString();
-    const outputDir = path.join('hls', videoId);
-    fs.mkdirSync(outputDir, { recursive: true });
 
-   // ffmpeg command: adaptive HLS (2 variants: 720p & 360p)
-   // const safeInput = inputPath.replace(/(["'\s])/g, '\\$1');
-   // const safeOutput = outputDir.replace(/(["'\s])/g, '\\$1');
-
-    const cmd = `ffmpeg -y -i "${inputPath.replace(/\\\\/g,'/')}" \
+  public createCommand(
+    inputPath: string,
+    outputDir: string
+  ) {
+    return `ffmpeg -y -i "${inputPath.replace(/\\\\/g,'/')}" \
     -preset veryfast -g 48 -sc_threshold 0 \
     -map 0:v -map 0:a? \
     -s:v 1280x720 -b:v 2500k -c:v libx264 \
     -c:a aac -b:a 128k \
     -f hls -hls_time 6 -hls_playlist_type vod \
     -hls_segment_filename "${outputDir.replace(/\\\\/g,'/')}/segment%03d.ts" \
-    "${outputDir.replace(/\\\\/g,'/')}/playlist.m3u8"`;
+    "${outputDir.replace(/\\\\/g,'/')}/playlist.m3u8"`
+  }
 
+  public generateThumbnailCommand(
+    inputPath: string,
+    outputDir: string
+  ) {
+    return `ffmpeg -i ${inputPath} -ss 00:00:05 -vframes 1 ${outputDir}`
+  }
+
+  async upload(file: Express.Multer.File, metadata: Video) {
+    if (!file) throw new HttpException('No file uploaded', 400);
+    const inputPath = file.path;
 
     try {
+      const uploadedMetadata = new this.videoModel(metadata)
+      const videoId = (uploadedMetadata._id as ObjectId).toString()
+      const outputDir = path.join('hls', videoId);
+      const extension = ".png"
+      const thumbnailOutputDir = path.join('thumbnails',`${videoId}-${uploadedMetadata.title.replace(" ","_").toLowerCase()}`)
+
+      fs.mkdirSync(outputDir, { recursive: true });
+  
+      const cmd = this.createCommand(inputPath,outputDir);
+      const createTnCmd = this.generateThumbnailCommand(inputPath,thumbnailOutputDir+extension)
+      Logger.debug(createTnCmd)
+      const url = `http://192.168.0.198:8080/hls/${uploadedMetadata._id}/playlist.m3u8`
+      const thumbnailUrl = `http://192.168.0.198:8080/thumbnails/${videoId}-${uploadedMetadata.title.replace(" ","_").toLowerCase()}.png`
+      uploadedMetadata.set('url',url)
+      uploadedMetadata.set('thumbnailUrl',thumbnailUrl)
+      
       await new Promise((resolve, reject) => {
-        const p = exec(cmd, { maxBuffer: 1024 * 1024 * 50 }, (err, stdout, stderr) => {
+        exec(cmd, { maxBuffer: 1024 * 1024 * 50 }, (err) => {
           if (err) return reject(err);
           resolve(true);
         });
       });
-      // Optionally delete original upload to save space
-      try { fs.unlinkSync(inputPath); } catch(e) {}
-      return { videoId };
+      await new Promise((resolve, reject) => {
+        exec(createTnCmd, { maxBuffer: 1024 * 1024 * 50 }, (err) => {
+          if (err) return reject(err);
+          resolve(true);
+        });
+      });
+      return uploadedMetadata.save();
     } catch (e) {
-      console.error('ffmpeg error', e);
       throw new HttpException('Encoding failed', 500);
     }
   }
-
-  
 }

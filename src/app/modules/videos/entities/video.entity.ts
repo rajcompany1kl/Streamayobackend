@@ -12,11 +12,14 @@ export class Video {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ required: true })
-  url: string; // e.g., path to S3 or local storage
+  @Prop({ required: false })
+  url: string;
+
+  @Prop({ required: false })
+  thumbnailUrl: string;
 
   @Prop({ required: true })
-  userId: string; // Clerk user ID, who uploaded the video
+  userId: string;
 
   @Prop({ type: Number, default: 0 })
   views: number;
