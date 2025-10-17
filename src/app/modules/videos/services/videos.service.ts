@@ -20,27 +20,31 @@ export class VideosService {
     const hlsDir = path.join(process.cwd(), 'hls');
 
     if (!fs.existsSync(hlsDir)) {
-      return [];
+      return { users: [], videos: [] };
     }
-    let users: any[] = []
-    const videos = await this.videoModel.find().exec()
-    for(let video of videos) {
-      const user = await this.userService.getUserById(video.userId)
-      users.push(user)
-    }
+    const videos = await this.videoModel.find().lean().exec();
 
-    return {users, videos}
+    if (videos.length === 0) {
+      return { users: [], videos: [] };
+    }
+    const userIds = [...new Set(videos.map(video => video.userId))];
+
+    const userPromises = userIds.map(id => this.userService.getUserById(id));
+    const users = await Promise.all(userPromises);
+
+    return { users, videos };
   }
 
-  private async getVideoById(id: string) {
+  public async getVideoById(id: string) {
     return this.videoModel.findById(id).exec()
   }
 
   public async getVideoByUserId(userId: string) {
-    return this.videoModel.find({ userId }).exec()
+    const videos = this.videoModel.find({ userId: userId }).exec()
+    return videos
   }
 
-  private async deleteVideoMetadata(id: string) {
+  public async deleteVideoMetadata(id: string) {
     const deletedVideo = this.videoModel.findByIdAndDelete(id).exec();
     if(!deletedVideo) {
       throw new NotFoundException(`Video with id: ${id} not found!`)
@@ -75,18 +79,22 @@ export class VideosService {
 
     try {
       const uploadedMetadata = new this.videoModel(metadata)
+
       const videoId = (uploadedMetadata._id as ObjectId).toString()
       const outputDir = path.join('hls', videoId);
+
       const extension = ".png"
-      const thumbnailOutputDir = path.join('thumbnails',`${videoId}-${uploadedMetadata.title.replace(" ","_").toLowerCase()}`)
+      const thumbnailEndpoint = `${videoId}-${uploadedMetadata.title.replaceAll(" ","_").toLowerCase()}`;
+      const thumbnailOutputDir = path.join('thumbnails',thumbnailEndpoint)
 
       fs.mkdirSync(outputDir, { recursive: true });
   
       const cmd = this.createCommand(inputPath,outputDir);
       const createTnCmd = this.generateThumbnailCommand(inputPath,thumbnailOutputDir+extension)
-      Logger.debug(createTnCmd)
+
       const url = `http://192.168.0.198:8080/hls/${uploadedMetadata._id}/playlist.m3u8`
-      const thumbnailUrl = `http://192.168.0.198:8080/thumbnails/${videoId}-${uploadedMetadata.title.replace(" ","_").toLowerCase()}.png`
+      const thumbnailUrl = `http://192.168.0.198:8080/thumbnails/${thumbnailEndpoint}${extension}`
+      
       uploadedMetadata.set('url',url)
       uploadedMetadata.set('thumbnailUrl',thumbnailUrl)
       
@@ -102,9 +110,11 @@ export class VideosService {
           resolve(true);
         });
       });
+      console.log("yha")
+      fs.unlinkSync(inputPath)
       return uploadedMetadata.save();
     } catch (e) {
-      throw new HttpException('Encoding failed', 500);
+      throw new HttpException(e, 500);
     }
   }
 }

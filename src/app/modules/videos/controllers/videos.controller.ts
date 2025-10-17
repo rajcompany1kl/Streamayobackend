@@ -9,7 +9,10 @@ export class VideosController {
  
   @Post('upload')
   @UseInterceptors(FileInterceptor('video'))
-  async uploadFile(@UploadedFile() video: Express.Multer.File, @Body() metadata: Video) {
+  async uploadFile(
+    @UploadedFile() video: Express.Multer.File, 
+    @Body() metadata: Video
+  ) {
     try {
       const uploadedVideo = this.videosService.upload(video, metadata);
       return uploadedVideo
@@ -28,8 +31,21 @@ export class VideosController {
     }
   }
 
+  @Get(":id")
+  getVideoUsingId(
+    @Param("id") id: string
+  ) {
+    try {
+      return this.videosService.getVideoById(id)
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
+
   @Get("user/:userId")
-  getVideosByUserId(@Param('userId') userId: string) {
+  getVideosByUserId(
+    @Param('userId') userId: string
+  ) {
     try {
       const videos = this.videosService.getVideoByUserId(userId)
       return videos
