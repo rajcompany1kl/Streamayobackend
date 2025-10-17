@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model, ObjectId } from 'mongoose';
-import { Video, VideoDocument } from '../entities/video.entity';
+import { ExtendedVideoEntity, Video, VideoDocument } from '../entities/video.entity';
 import { HttpException } from '@nestjs/common';
 import { exec } from 'child_process';
 import * as fs from 'fs';
@@ -35,8 +35,15 @@ export class VideosService {
     return { users, videos };
   }
 
-  public async getVideoById(id: string) {
-    return this.videoModel.findById(id).exec()
+  public async getVideoById(id: string): Promise<ExtendedVideoEntity> {
+    const video = await this.videoModel.findById(id).exec()
+    let user:any
+    if(video) {
+      user = await this.userService.getUserById(video.userId)
+    }
+
+    const responseObj =  {...video, userImageUrl: user.imageUrl, userName: `${user.firstName} ${user.lastName}` } as ExtendedVideoEntity
+    return responseObj
   }
 
   public async getVideoByUserId(userId: string) {
@@ -57,12 +64,12 @@ export class VideosService {
     outputDir: string
   ) {
     return `ffmpeg -y -i "${inputPath.replace(/\\\\/g,'/')}" \
-    -preset veryfast -g 48 -sc_threshold 0 \
-    -map 0:v -map 0:a? \
-    -s:v 1280x720 -b:v 2500k -c:v libx264 \
+    -vf "scale=3840:2160" \
+    -c:v libx264 -crf 20 -preset slow -pix_fmt yuv420p \
     -c:a aac -b:a 128k \
-    -f hls -hls_time 6 -hls_playlist_type vod \
-    -hls_segment_filename "${outputDir.replace(/\\\\/g,'/')}/segment%03d.ts" \
+    -g 120 -sc_threshold 0 -hls_list_size 0 -hls_flags delete_segments \
+    -hls_time 4 -hls_playlist_type vod \
+    -hls_segment_filename "${outputDir.replace(/\\\\/g,'/')}/segment_%05d.ts" \
     "${outputDir.replace(/\\\\/g,'/')}/playlist.m3u8"`
   }
 

@@ -31,4 +31,9 @@ export class Video {
   commentsCount: number;
 }
 
+export class ExtendedVideoEntity extends Video {
+  userImageUrl: string;
+  userName: string;
+}
+
 export const VideoEntity = SchemaFactory.createForClass(Video);
