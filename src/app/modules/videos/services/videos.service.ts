@@ -99,8 +99,8 @@ export class VideosService {
       const cmd = this.createCommand(inputPath,outputDir);
       const createTnCmd = this.generateThumbnailCommand(inputPath,thumbnailOutputDir+extension)
 
-      const url = `http://192.168.0.198:8080/hls/${uploadedMetadata._id}/playlist.m3u8`
-      const thumbnailUrl = `http://192.168.0.198:8080/thumbnails/${thumbnailEndpoint}${extension}`
+      const url = `http://localhost:8080/hls/${uploadedMetadata._id}/playlist.m3u8`
+      const thumbnailUrl = `http://localhost:8080/thumbnails/${thumbnailEndpoint}${extension}`
       
       uploadedMetadata.set('url',url)
       uploadedMetadata.set('thumbnailUrl',thumbnailUrl)

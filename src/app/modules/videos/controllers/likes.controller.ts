@@ -4,19 +4,33 @@ import { Body, Controller, Get, Logger, Param, Post, UploadedFile, UseIntercepto
 import { Like } from '../entities/like.entity';
 import { LikesService } from '../services/likes.service';
 
-  
+
 @Controller('likes')
 export class LikesController {
-  constructor(private readonly likesService: LikesService) {}
+  constructor(private readonly likesService: LikesService) { }
 
- @Post("video/:videoId/:videoOwnerId")
- public likeVideo(
-    @Param('videoId') videoId: string, 
-    @Param('videoOwnerId') videoOwnerId: string, 
+  @Post("video/:videoId/:videoOwnerId")
+  public likeVideo(
+    @Param('videoId') videoId: string,
+    @Param('videoOwnerId') videoOwnerId: string,
     @Body('userId') userId: string
   ) {
     try {
       const result = this.likesService.LikeVideo(videoId, userId, videoOwnerId);
+      return result
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
+
+  @Post("video/dislike/:videoId/:videoOwnerId")
+  public dislikeVideo(
+    @Param('videoId') videoId: string,
+    @Param('videoOwnerId') videoOwnerId: string,
+    @Body('userId') userId: string
+  ) {
+    try {
+      const result = this.likesService.DislikeVideo(videoId, userId, videoOwnerId);
       return result
     } catch (error) {
       Logger.error(error)
@@ -32,7 +46,7 @@ export class LikesController {
       const result = this.likesService.isLiked(videoId, userId)
       return result
     } catch (error) {
-      
+
     }
   }
 }

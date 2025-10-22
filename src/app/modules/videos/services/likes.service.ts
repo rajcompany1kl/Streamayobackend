@@ -12,20 +12,80 @@ export class LikesService {
   constructor(
     @InjectModel(Like.name) private likeModel: Model<Like>
     , @InjectModel(Video.name) private videoModel: Model<Video>
-  ) {}
+  ) { }
 
   public async LikeVideo(videoId: string, userId: string, videoOwnerId: string) {
-    const res1 = await this.likeModel.create({ videoId, userId, videoOwnerId });
-    const res2 = await this.videoModel.findByIdAndUpdate(videoId, { $inc: { likesCount: 1 } }, { new: true });
-    if (!res2) { 
-      throw new NotFoundException(`Video with id: ${videoId} not found!`);
+    const existingLikeEntity = await this.likeModel.findOne({ videoId, userId, videoOwnerId });
+    let increment = 0;
+
+    if (!existingLikeEntity) {
+      await this.likeModel.create({ videoId, userId, videoOwnerId, status: 'LIKED', isComment: false });
+      increment = 1;
+    } else if (existingLikeEntity.status === 'DISLIKED') {
+      await this.likeModel.updateOne(
+        { videoId, userId, videoOwnerId },
+        { $set: { status: 'LIKED' } }
+      );
+      increment = 2;
+    } else {
+      increment = 0;
     }
+
+    if (increment !== 0) {
+      const response = await this.videoModel.findByIdAndUpdate(
+        videoId,
+        { $inc: { likesCount: increment } },
+        { new: true }
+      );
+
+      if (!response) {
+        throw new NotFoundException(`Video with id: ${videoId} not found!`);
+      }
+    }
+
+    return true;
+  }
+
+  public async DislikeVideo(videoId: string, userId: string, videoOwnerId: string) {
+    const existingLikeEntity = await this.likeModel.findOne({ videoId, userId, videoOwnerId });
+    let increment = 0;
+
+    if (!existingLikeEntity) {
+      await this.likeModel.create({ videoId, userId, videoOwnerId, status: 'DISLIKED', isComment: false });
+      increment = -1;
+    } else if (existingLikeEntity.status === 'LIKED') {
+      await this.likeModel.updateOne(
+        { videoId, userId, videoOwnerId },
+        { $set: { status: 'DISLIKED' } }
+      );
+      increment = -2;
+    } else {
+      increment = 0;
+    }
+
+    if (increment !== 0) {
+      const response = await this.videoModel.findByIdAndUpdate(
+        videoId,
+        { $inc: { likesCount: increment } },
+        { new: true }
+      );
+
+      if (!response) {
+        throw new NotFoundException(`Video with id: ${videoId} not found!`);
+      }
+    }
+
     return true;
   }
 
   public async isLiked(videoId: string, userId: string) {
     const like = await this.likeModel.findOne({ videoId, userId }).exec();
-    return like ? true : false;
+    if(like?.status === 'LIKED') {
+      return true
+    } else if(like?.status === 'DISLIKED') {
+      return false
+    }
+    return null;
   }
 
 } 
