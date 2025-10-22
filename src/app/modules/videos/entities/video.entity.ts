@@ -28,6 +28,9 @@ export class Video {
   likesCount: number;
 
   @Prop({ type: Number, default: 0 })
+  dislikeCount: number;
+
+  @Prop({ type: Number, default: 0 })
   commentsCount: number;
 }
 

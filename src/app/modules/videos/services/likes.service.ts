@@ -17,6 +17,7 @@ export class LikesService {
   public async LikeVideo(videoId: string, userId: string, videoOwnerId: string) {
     const existingLikeEntity = await this.likeModel.findOne({ videoId, userId, videoOwnerId });
     let increment = 0;
+    let updatedDislikes = 0;
 
     if (!existingLikeEntity) {
       await this.likeModel.create({ videoId, userId, videoOwnerId, status: 'LIKED', isComment: false });
@@ -26,7 +27,8 @@ export class LikesService {
         { videoId, userId, videoOwnerId },
         { $set: { status: 'LIKED' } }
       );
-      increment = 2;
+      increment = 1;
+      updatedDislikes = -1
     } else {
       increment = 0;
     }
@@ -34,7 +36,7 @@ export class LikesService {
     if (increment !== 0) {
       const response = await this.videoModel.findByIdAndUpdate(
         videoId,
-        { $inc: { likesCount: increment } },
+        { $inc: { likesCount: increment, dislikeCount: updatedDislikes } },
         { new: true }
       );
 
@@ -49,6 +51,7 @@ export class LikesService {
   public async DislikeVideo(videoId: string, userId: string, videoOwnerId: string) {
     const existingLikeEntity = await this.likeModel.findOne({ videoId, userId, videoOwnerId });
     let increment = 0;
+    let updatedLikes = 0;
 
     if (!existingLikeEntity) {
       await this.likeModel.create({ videoId, userId, videoOwnerId, status: 'DISLIKED', isComment: false });
@@ -58,7 +61,8 @@ export class LikesService {
         { videoId, userId, videoOwnerId },
         { $set: { status: 'DISLIKED' } }
       );
-      increment = -2;
+      increment = 1;
+      updatedLikes = -1
     } else {
       increment = 0;
     }
@@ -66,7 +70,7 @@ export class LikesService {
     if (increment !== 0) {
       const response = await this.videoModel.findByIdAndUpdate(
         videoId,
-        { $inc: { likesCount: increment } },
+        { $inc: { dislikeCount: increment, likesCount: updatedLikes } },
         { new: true }
       );
 
