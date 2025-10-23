@@ -1,9 +1,5 @@
 import { Body, Controller, Get, Logger, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-
-
-import { Like } from '../entities/like.entity';
 import { LikesService } from '../services/likes.service';
-
 
 @Controller('likes')
 export class LikesController {
@@ -46,7 +42,19 @@ export class LikesController {
       const result = this.likesService.isLiked(videoId, userId)
       return result
     } catch (error) {
+      Logger.error(error)
+    }
+  }
 
+  @Post("videos/:userId") 
+  public getLikedVideos(
+    @Param("userId") userId: string
+  ) {
+    try {
+      const result = this.likesService.getLikedVideos(userId)
+      return result
+    } catch (error) {
+      Logger.error(error)
     }
   }
 }
