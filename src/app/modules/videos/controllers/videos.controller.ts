@@ -2,6 +2,8 @@ import { Body, Controller, Get, Logger, Param, Post, UploadedFile, UseIntercepto
 import { VideosService } from '../services/videos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Video } from '../entities/video.entity';
+import mongoose from 'mongoose';
+import { MyListDto } from '../dto/my-list-add.dto';
 
 @Controller('videos')
 export class VideosController {
@@ -41,7 +43,31 @@ export class VideosController {
       Logger.error(error)
     }
   }
+  
+  @Get("mylist/:userId")
+  savedVideos(
+    @Param('userId') userId: string
+  ){
+    try {
+      return this.videosService.savedVideos(userId)
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
 
+  @Post("save/:videoId/:userId")
+  saveVideo(
+    @Param('videoId') videoId: string,
+    @Param('userId') userId: string,
+    @Body('videoOwnerDetails') videoOwnerDetails: MyListDto
+  ) {
+    try {
+     return this.videosService.saveVideo(userId, videoId, videoOwnerDetails.videoOwnerId, videoOwnerDetails.videoOwnerName, videoOwnerDetails.videoOwnerUrl)
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
+  
   @Get("user/:userId")
   getVideosByUserId(
     @Param('userId') userId: string
@@ -53,4 +79,18 @@ export class VideosController {
       Logger.error(error)
     }
   }
+
+  @Get("save-status/:videoId/:userId")
+  getSaveStatus(
+    @Param('videoId') videoId: string,
+    @Param('userId') userId: string
+  ){
+      try {
+      const res = this.videosService.isSaved(userId, videoId)
+      return res
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
 }
+ 

@@ -1,22 +1,25 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model, ObjectId } from 'mongoose';
+import { Connection, deleteModel, Model, ObjectId } from 'mongoose';
 import { ExtendedVideoEntity, Video, VideoDocument } from '../entities/video.entity';
 import { HttpException } from '@nestjs/common';
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { UserService } from '../../user/services/user.service';
+import { Mylist, MylistDocument } from '../entities/mylist.entity';
 
 @Injectable()
 export class VideosService {
   constructor(
     @InjectConnection() private connection: Connection,
     @InjectModel(Video.name) private videoModel: Model<VideoDocument>,
+     @InjectModel(Mylist.name) private mylistModel: Model<MylistDocument>,
     private readonly userService: UserService
   ) {}
 
   public async getAllVideos() {
+    console.log("get all hit")
     const hlsDir = path.join(process.cwd(), 'hls');
 
     if (!fs.existsSync(hlsDir)) {
@@ -49,6 +52,53 @@ export class VideosService {
   public async getVideoByUserId(userId: string) {
     const videos = this.videoModel.find({ userId: userId }).exec()
     return videos
+  }
+
+
+
+   public async saveVideo(userId: string, videoId: string, videoOwnerId: string, videoOwnerName: string, videoOwnerUrl: string) {
+    console.log(videoOwnerId)
+    const existing = await this.mylistModel.findOne({ userId, videoId });
+
+  if (existing) {
+    console.log("unsave karra hu")
+    await this.mylistModel.deleteOne({ userId, videoId });
+    console.log("unsave kar diya")
+    return { message: "Video removed from list" };
+  }
+
+    const item = new this.mylistModel({
+      userId,
+      videoId,
+      videoOwnerId,
+      videoOwnerName,
+      videoOwnerUrl
+    });
+
+  const savedItem = await item.save();
+  const populatedItem = await savedItem.populate('videoId');
+  return populatedItem;
+  }
+
+   public async isSaved(userId: string, videoId: string) {
+    
+    const existing = await this.mylistModel.findOne({ userId, videoId });
+
+  if (existing) {
+    return true;
+  }
+
+  return false;
+  } 
+  
+   public async savedVideos(userId: string) {
+   const savedVideos = await this.mylistModel.find({ userId: userId }).populate('videoId').exec()
+   let extendedVideos: ExtendedVideoEntity[] = []
+   for(let video of savedVideos) {
+    const extendedVideo = {...(video.videoId as any), userName: video.videoOwnerName, userImageUrl: video.videoOwnerUrl} as ExtendedVideoEntity
+    extendedVideos.push(extendedVideo)
+   }
+  return extendedVideos;
   }
 
   public async deleteVideoMetadata(id: string) {
@@ -86,7 +136,7 @@ export class VideosService {
 
     try {
       const uploadedMetadata = new this.videoModel(metadata)
-
+      console.log("upload route hit");
       const videoId = (uploadedMetadata._id as ObjectId).toString()
       const outputDir = path.join('hls', videoId);
 

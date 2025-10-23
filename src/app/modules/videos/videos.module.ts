@@ -9,13 +9,15 @@ import { FileSystemModule } from '../file-system/file-system.module';
 import { UserService } from '../user/services/user.service';
 import { LikesController } from './controllers/likes.controller';
 import { LikesService } from './services/likes.service';
+import { Mylist, MylistEntity } from './entities/mylist.entity';
 
 @Module({
   imports:[
     MongooseModule.forFeature([
       { name: Video.name, schema: VideoEntity },
       { name: Comment.name, schema: CommentEntity },
-      { name: Like.name, schema: LikeEntity }
+      { name: Like.name, schema: LikeEntity },
+      { name: Mylist.name, schema: MylistEntity}
     ]),
     FileSystemModule
   ],
