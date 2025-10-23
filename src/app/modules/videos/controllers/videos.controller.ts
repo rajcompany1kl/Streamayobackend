@@ -2,27 +2,13 @@ import { Body, Controller, Get, Logger, Param, Post, UploadedFile, UseIntercepto
 import { VideosService } from '../services/videos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Video } from '../entities/video.entity';
-import mongoose from 'mongoose';
+import { v2 as cloudinary } from 'cloudinary';
 import { MyListDto } from '../dto/my-list-add.dto';
 
 @Controller('videos')
 export class VideosController {
   constructor(private readonly videosService: VideosService) {}
  
-  @Post('upload')
-  @UseInterceptors(FileInterceptor('video'))
-  async uploadFile(
-    @UploadedFile() video: Express.Multer.File, 
-    @Body() metadata: Video
-  ) {
-    try {
-      const uploadedVideo = this.videosService.upload(video, metadata);
-      return uploadedVideo
-    } catch (error) {
-      Logger.error(error)
-    }
-  }
-
   @Get()
   getAllVideos() {
     try {
@@ -33,17 +19,6 @@ export class VideosController {
     }
   }
 
-  @Get(":id")
-  getVideoUsingId(
-    @Param("id") id: string
-  ) {
-    try {
-      return this.videosService.getVideoById(id)
-    } catch (error) {
-      Logger.error(error)
-    }
-  }
-  
   @Get("mylist/:userId")
   savedVideos(
     @Param('userId') userId: string
@@ -88,6 +63,45 @@ export class VideosController {
       try {
       const res = this.videosService.isSaved(userId, videoId)
       return res
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
+
+    @Get('upload-signature')
+  getUploadSignature() {
+    const timestamp = Math.floor(Date.now() / 1000);
+    if (!process.env.CLOUDINARY_API_SECRET) {
+      throw new Error('CLOUDINARY_API_SECRET is not defined');
+    }
+    const signature = cloudinary.utils.api_sign_request(
+      { timestamp,
+        folder: "videos"
+       },
+      process.env.CLOUDINARY_API_SECRET
+    );
+
+    return { signature, timestamp, apiKey: process.env.CLOUDINARY_API_KEY, cloudName: process.env.CLOUDINARY_CLOUD_NAME };
+  }
+
+  @Post('cloud/upload')
+  uploadToCloud(
+  @Body() metadata: any
+  ){
+     try {
+      const uploadedVideo = this.videosService.uploadToCloud(metadata);
+      return uploadedVideo
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
+  
+   @Get(":id")
+  getVideoUsingId(
+    @Param("id") id: string
+  ) {
+    try {
+      return this.videosService.getVideoById(id)
     } catch (error) {
       Logger.error(error)
     }
