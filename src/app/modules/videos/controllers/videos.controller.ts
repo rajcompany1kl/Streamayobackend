@@ -42,7 +42,36 @@ export class VideosController {
       Logger.error(error)
     }
   }
+
+  @Get("subscribe/:creatorId/:userId/:checking")
+  subscribe(
+    @Param('creatorId') creatorId: string,
+    @Param('userId') userId: string,
+    @Param('checking') checking: string,
+  ) {
+    try {
+      const isChecking = checking === 'true';
+      console.log('checking',checking)
+     return this.videosService.subscribe( creatorId, userId, isChecking)
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
   
+   @Get("subscribed-vids/:userId")
+  subscribedVids(
+    @Param('userId') userId: string,
+  ) {
+    try {
+    
+     return this.videosService.subscribedVids(userId)
+    } catch (error) {
+      Logger.error(error)
+    }
+  }
+
+
+
   @Get("user/:userId")
   getVideosByUserId(
     @Param('userId') userId: string
@@ -105,6 +134,22 @@ export class VideosController {
     } catch (error) {
       Logger.error(error)
     }
+  }
+
+   // 🟢 Get all comments for a video
+  @Get('comments/:videoId')
+  async getComments(@Param('videoId') videoId: string) {
+    return this.videosService.getComments(videoId);
+  }
+
+  // 🟢 Add a comment to a video
+  @Post('add-comment/:videoId/:userId')
+  async addComment(
+    @Param('videoId') videoId: string,
+    @Param('userId') userId: string,
+    @Body() body: { text: string }
+  ) {
+    return this.videosService.addComment(videoId, userId, body.text);
   }
 }
  

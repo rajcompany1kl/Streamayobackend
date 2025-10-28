@@ -9,6 +9,7 @@ import { UserService } from '../user/services/user.service';
 import { LikesController } from './controllers/likes.controller';
 import { LikesService } from './services/likes.service';
 import { Mylist, MylistEntity } from './entities/mylist.entity';
+import { Subscription, SubscriptionEntity } from './entities/subscription.entity';
 
 @Module({
   imports:[
@@ -16,7 +17,8 @@ import { Mylist, MylistEntity } from './entities/mylist.entity';
       { name: Video.name, schema: VideoEntity },
       { name: Comment.name, schema: CommentEntity },
       { name: Like.name, schema: LikeEntity },
-      { name: Mylist.name, schema: MylistEntity}
+      { name: Mylist.name, schema: MylistEntity},
+      { name: Subscription.name, schema: SubscriptionEntity },
     ]),
   ],
   controllers: [VideosController, LikesController],
