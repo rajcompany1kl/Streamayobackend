@@ -130,6 +130,7 @@ export class VideosController {
   getVideoUsingId(
     @Param("id") id: string
   ) {
+    console.log("Fetching video by id:");
     try {
       return this.videosService.getVideoById(id)
     } catch (error) {

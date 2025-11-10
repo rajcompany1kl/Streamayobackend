@@ -35,7 +35,8 @@ export class VideosService {
     return { users, videos };
   }
 
-  public async getVideoById(id: string): Promise<ExtendedVideoEntity> {
+  public async getVideoById(id: string): Promise<ExtendedVideoEntity> { 
+    console.log("Fetching video by id:", id); 
     const video = await this.videoModel.findById(id).exec()
     let user:any
     if(video) {
