@@ -13,6 +13,7 @@ export class VideosController {
   getAllVideos() {
     try {
       const response = this.videosService.getAllVideos()
+      console.log("all videos:", response)
       return response
     } catch (error) {
       Logger.error(error)
@@ -51,7 +52,7 @@ export class VideosController {
   ) {
     try {
       const isChecking = checking === 'true';
-      console.log('checking',checking)
+     
      return this.videosService.subscribe( creatorId, userId, isChecking)
     } catch (error) {
       Logger.error(error)

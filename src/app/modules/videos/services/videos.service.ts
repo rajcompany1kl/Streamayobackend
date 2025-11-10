@@ -21,7 +21,7 @@ export class VideosService {
   ) {}
 
   public async getAllVideos() {
-    console.log("get all hit")
+ 
     const videos = await this.videoModel.find().lean().exec();
 
     if (videos.length === 0) {
@@ -54,13 +54,13 @@ export class VideosService {
 
 
    public async saveVideo(userId: string, videoId: string, videoOwnerId: string, videoOwnerName: string, videoOwnerUrl: string) {
-    console.log(videoOwnerId)
+    
     const existing = await this.mylistModel.findOne({ userId, videoId });
 
   if (existing) {
-    console.log("unsave karra hu")
+    
     await this.mylistModel.deleteOne({ userId, videoId });
-    console.log("unsave kar diya")
+    
     return { message: "Video removed from list" };
   }
 
@@ -108,11 +108,9 @@ export class VideosService {
   
   async uploadToCloud( metadata: Video) {
     try {
-      console.log(metadata);
-      console.log("upload route hit");
       const uploadedMetadata = new this.videoModel(metadata);
     
-      console.log(uploadedMetadata)
+  
       return uploadedMetadata.save();
     } catch (e) {
       throw new HttpException(e, 500);
@@ -121,7 +119,7 @@ export class VideosService {
 
   // 🟢 Fetch all comments for a video
 public async getComments(videoId: string) {
-    console.log("getting comment")
+    
   const comments = await this.commentModel.find({ videoId }).lean().exec();
   if (!comments.length) return [];
 
@@ -142,7 +140,7 @@ public async getComments(videoId: string) {
 
 // 🟢 Add a new comment
 public async addComment(videoId: string, userId: string, text: string) {
-  console.log("adding comment")
+  
   if (!text || text.trim() === '') {
     throw new HttpException('Comment cannot be empty', 400);
   }
@@ -169,9 +167,7 @@ public async subscribe(creatorId: string, userId: string, isChecking: boolean) {
  const existingSubscription = await this.subscriptionModel.findOne({ creatorId, userId });
  let response = "wait"
  if(isChecking){
-    console.log('checking value:', isChecking, 'type:', typeof isChecking);
-
-  console.log('yhggy')
+   
  if( existingSubscription)
   return response = "true";
 else(!existingSubscription)
@@ -189,7 +185,7 @@ if (existingSubscription) {
   const savedSubscription = await newSubscription.save();
    response = "Subscribed"
 }
-  console.log(response)
+
   return response;
 }
 
@@ -203,7 +199,6 @@ public async subscribedVids(userId: string) {
 
 if (existingSubscriptions && existingSubscriptions.length > 0) {
  const creatorsIds = existingSubscriptions.map((e: any)=> e.creatorId)
-  console.log(creatorsIds);
 
     // 2️⃣ Fetch all videos from those creators in one query
  const videos = await this.videoModel
@@ -240,14 +235,13 @@ if (existingSubscriptions && existingSubscriptions.length > 0) {
     creatorVideosMap[uid].push(video);
   });
 
-  console.log(creatorVideosMap);
   return creatorVideosMap;
 
 
 } else {
    response = "No Subscriptions"
 }
-  console.log(response)
+  
   return response;
 }
 

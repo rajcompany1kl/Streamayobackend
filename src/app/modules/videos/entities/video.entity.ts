@@ -32,6 +32,13 @@ export class Video {
 
   @Prop({ type: Number, default: 0 })
   commentsCount: number;
+
+  @Prop({ type: Boolean, default: false })
+  live: boolean;
+
+
+   @Prop({ type: String})
+   duration: string;
 }
 
 export class ExtendedVideoEntity extends Video {

@@ -5,6 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ExtendedVideoEntity, Video } from '../entities/video.entity';
 import { UserService } from '../../user/services/user.service';
+import { response } from 'express';
 
 
 @Injectable()
@@ -47,7 +48,7 @@ export class LikesService {
       throw new NotFoundException(`Video with id: ${videoId} not found!`);
     }
 
-    return true;
+    return response.likesCount;
   }
 
   public async DislikeVideo(videoId: string, userId: string, videoOwnerId: string) {
@@ -71,9 +72,9 @@ export class LikesService {
     } else {
       increment = 0;
     }
-
+   let response;
     if (increment !== 0) {
-      const response = await this.videoModel.findByIdAndUpdate(
+      response = await this.videoModel.findByIdAndUpdate(
         videoId,
         { $inc: { dislikeCount: increment, likesCount: updatedLikes } },
         { new: true }
@@ -84,7 +85,7 @@ export class LikesService {
       }
     }
 
-    return true;
+    return response.likesCount;
   }
 
   public async getLikedVideos(userId: string) {
